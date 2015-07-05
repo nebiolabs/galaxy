@@ -3130,6 +3130,34 @@ class Workflow( object, Dictifiable ):
         rval['uuid'] = ( lambda uuid: str( uuid ) if uuid else None )( self.uuid )
         return rval
 
+    inputs = {} #todo: make this walk over the steps and return any of type input
+
+    def new_state( self, trans, all_pages=False, history=None ):
+        """
+        Create a new `DefaultToolState` for this tool. It will be initialized
+        with default values for inputs.
+
+        Only inputs on the first page will be initialized unless `all_pages` is
+        True, in which case all inputs regardless of page are initialized.
+        """
+        state = galaxy.tools.DefaultToolState()
+        state.inputs = {}
+        if all_pages:
+            inputs = self.inputs
+        else:
+            inputs = self.inputs_by_page[ 0 ]
+        self.fill_in_new_state( trans, inputs, state.inputs, history=history )
+        return state
+
+    def fill_in_new_state( self, trans, inputs, state, context=None, history=None ):
+        """
+        Fill in a tool state dictionary with default values for all parameters
+        in the dictionary `inputs`. Grouping elements are filled in recursively.
+        """
+        context = ExpressionContext( state, context )
+        for input in inputs.itervalues():
+            state[ input.name ] = input.get_initial_value( trans, context, history=history )
+
 
 class WorkflowStep( object ):
 

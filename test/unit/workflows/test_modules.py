@@ -8,7 +8,7 @@ from galaxy import model
 from galaxy.util import bunch
 
 from galaxy.workflow import modules
-from .workflow_support import MockTrans
+from .workflow_support import MockTrans, TestWorkflow
 
 
 def test_input_has_no_errors():
@@ -118,6 +118,14 @@ def test_data_input_get_form():
     assert module.get_config_form() == "TEMPLATE"
 
 
+def test_valid_new_subworkflow_has_no_errors():
+    trans = MockTrans()
+    test_wf = TestWorkflow().workflow
+    test_wf.name = 'wf1'
+
+    trans.app.toolbox.tools[ "wf1" ] = test_wf
+    tool_module = modules.module_factory.new( trans, "subworkflow", tool_id="wf1" )
+    assert not tool_module.get_errors()
 def test_subworkflow_compute_runtime_state_args():
     module = __from_step(
         type="subworkflow",
