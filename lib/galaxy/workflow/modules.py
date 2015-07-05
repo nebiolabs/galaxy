@@ -1032,6 +1032,7 @@ def load_module_sections( trans ):
             "title": "Experimental",
             "modules": [
                 {"name": "pause", "title": "Pause Workflow for Dataset Review", "description": "Pause for Review"},
+                {"name": "workflow", "title": "Allow sub-workflows", "description": "Allow workflows to be included as tools in other workflows"}
             ],
         }
         module_sections.append(experimental_modules)
