@@ -956,7 +956,7 @@ class SubWorkflowModule( AbstractExecutableModule ):
 
     @classmethod
     def from_dict(Class, trans, d, secure=True):
-        tool_id = d["tool_state"]["workflow_id"]
+        tool_id = d["tool_state"]["name"] #this should be a composite of the db workflow id and the step id (from the container workflow)
         module = Class(trans, tool_id)
         module.errors = d.get( "tool_errors", None )
         module.post_job_actions = d.get( "post_job_actions", {} )
