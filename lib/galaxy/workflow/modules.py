@@ -952,7 +952,7 @@ class ToolModule( AbstractExecutableModule ):
 
 
 class SubWorkflowModule( AbstractExecutableModule ):
-    type = 'workflow'
+    type = 'subworkflow'
 
     @classmethod
     def from_dict(Class, trans, d, secure=True):
