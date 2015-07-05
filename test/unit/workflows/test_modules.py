@@ -118,6 +118,52 @@ def test_data_input_get_form():
     assert module.get_config_form() == "TEMPLATE"
 
 
+def test_subworkflow_compute_runtime_state_args():
+    module = __from_step(
+        type="subworkflow",
+    )
+    tool_state = module.encode_runtime_state( module.trans, module.test_step.state )
+
+    hda = model.HistoryDatasetAssociation()
+    with mock.patch('galaxy.workflow.modules.check_param') as check_method:
+        check_method.return_value = ( hda, None )
+        state, errors = module.compute_runtime_state( module.trans, { 'input': 4, 'tool_state': tool_state } )
+
+    assert not errors
+    assert 'input' in state.inputs
+    assert state.inputs[ 'input' ] is hda
+
+
+def test_subworkflow_update():
+    module = __from_step(
+        type="subworkflow",
+        tool_inputs={
+            "name": "Workflow input",
+        },
+    )
+    module.update_state( dict( name="Supa Workflow New Name" ) )
+    assert module.state[ 'name' ] == "Supa Workflow New Name"
+
+
+def test_subworkflow_get_form():
+    module = __from_step(
+        type="subworkflow",
+        tool_inputs={
+            "name": "Workflow Input",
+        },
+    )
+
+    def test_form(template, **kwds ):
+        assert template == "workflow/editor_generic_form.mako"
+        assert "form" in kwds
+        assert len( kwds[ "form" ].inputs ) == 1
+        return "TEMPLATE"
+
+    fill_mock = mock.Mock( side_effect=test_form )
+    module.trans.fill_template = fill_mock
+    assert module.get_config_form() == "TEMPLATE"
+
+
 def test_data_collection_input_default_state():
     trans = MockTrans()
     module = modules.module_factory.new( trans, "data_collection_input" )

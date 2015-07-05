@@ -24,6 +24,11 @@ from galaxy.util import odict
 from galaxy.util.json import loads
 from galaxy.util.json import dumps
 
+from abc import (
+    ABCMeta,
+    abstractmethod
+)
+
 log = logging.getLogger( __name__ )
 
 # Key into Tool state to describe invocation-specific runtime properties.
@@ -480,10 +485,8 @@ class PauseModule( SimpleWorkflowModule ):
         """
         return bool( action )
 
-
-class ToolModule( WorkflowModule ):
-
-    type = "tool"
+class AbstractExecutableModule(WorkflowModule):
+    __metaclass__ = ABCMeta
 
     def __init__( self, trans, tool_id, tool_version=None ):
         self.trans = trans
@@ -509,23 +512,11 @@ class ToolModule( WorkflowModule ):
         module.state = module.tool.new_state( trans, all_pages=True )
         return module
 
-    @classmethod
-    def from_dict( Class, trans, d, secure=True ):
-        tool_id = d[ 'tool_id' ]
-        tool_version = str( d.get( 'tool_version', None ) )
-        module = Class( trans, tool_id, tool_version=tool_version )
-        module.state = galaxy.tools.DefaultToolState()
-        if module.tool is not None:
-            if d.get('tool_version', 'Unspecified') != module.get_tool_version():
-                message = "%s: using version '%s' instead of version '%s' indicated in this workflow." % ( tool_id, d.get( 'tool_version', 'Unspecified' ), module.get_tool_version() )
-                log.debug(message)
-                module.version_changes.append(message)
-            if d[ "tool_state" ]:
-                module.state.decode( d[ "tool_state" ], module.tool, module.trans.app, secure=secure )
-        module.errors = d.get( "tool_errors", None )
-        module.post_job_actions = d.get( "post_job_actions", {} )
-        module.workflow_outputs = d.get( "workflow_outputs", [] )
-        return module
+    @abstractmethod
+    def from_dict(Class,trans, dict, secure=True):
+        """
+        tools can have versions, but workflows do not
+        """
 
     @classmethod
     def from_workflow_step( Class, trans, step ):
@@ -937,6 +928,46 @@ class ToolModule( WorkflowModule ):
         progress.set_step_outputs( step, outputs )
 
 
+class ToolModule( AbstractExecutableModule ):
+
+    type = "tool"
+
+    @classmethod
+    def from_dict( Class, trans, d, secure=True ):
+        tool_id = d[ 'tool_id' ]
+        tool_version = str( d.get( 'tool_version', None ) )
+        module = Class( trans, tool_id, tool_version=tool_version )
+        module.state = galaxy.tools.DefaultToolState()
+        if module.tool is not None:
+            if d.get('tool_version', 'Unspecified') != module.get_tool_version():
+                message = "%s: using version '%s' instead of version '%s' indicated in this workflow." % ( tool_id, d.get( 'tool_version', 'Unspecified' ), module.get_tool_version() )
+                log.debug(message)
+                module.version_changes.append(message)
+            if d[ "tool_state" ]:
+                module.state.decode( d[ "tool_state" ], module.tool, module.trans.app, secure=secure )
+        module.errors = d.get( "tool_errors", None )
+        module.post_job_actions = d.get( "post_job_actions", {} )
+        module.workflow_outputs = d.get( "workflow_outputs", [] )
+        return module
+
+
+class SubWorkflowModule( AbstractExecutableModule ):
+    type = 'workflow'
+
+    @classmethod
+    def from_dict(Class, trans, d, secure=True):
+        tool_id = d["tool_state"]["workflow_id"]
+        module = Class(trans, tool_id)
+        module.errors = d.get( "tool_errors", None )
+        module.post_job_actions = d.get( "post_job_actions", {} )
+        module.workflow_outputs = d.get( "workflow_outputs", [] )
+        module.state = galaxy.tools.DefaultToolState()
+        if d["tool_state"] :
+            module.state.decode(d["tool_state"],module.tool,module.trans.app, secure=secure)
+
+        return module
+
+
 class WorkflowModuleFactory( object ):
 
     def __init__( self, module_types ):
@@ -975,6 +1006,7 @@ module_types = dict(
     data_collection_input=InputDataCollectionModule,
     pause=PauseModule,
     tool=ToolModule,
+    subworkflow=SubWorkflowModule,
 )
 module_factory = WorkflowModuleFactory( module_types )
 
