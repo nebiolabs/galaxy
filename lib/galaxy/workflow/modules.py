@@ -991,7 +991,7 @@ class WorkflowModuleFactory( object ):
 
     def from_workflow_step( self, trans, step ):
         """
-        Return module initializd from the WorkflowStep object `step`.
+        Return module initialized from the WorkflowStep object `step`.
         """
         type = step.type
         return self.module_types[type].from_workflow_step( trans, step )
