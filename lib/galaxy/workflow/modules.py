@@ -40,6 +40,7 @@ RUNTIME_POST_JOB_ACTIONS_KEY = "__POST_JOB_ACTIONS__"
 
 
 class WorkflowModule( object ):
+    _metaclass__ = ABCMeta
 
     def __init__( self, trans ):
         self.trans = trans
@@ -137,6 +138,7 @@ class WorkflowModule( object ):
 
     # ---- Run time ---------------------------------------------------------
 
+    @abstractmethod
     def get_runtime_inputs( self ):
         """ Used internally by modules and when displaying inputs in workflow
         editor and run workflow templates.
@@ -145,7 +147,6 @@ class WorkflowModule( object ):
         specialized logic for dealing with the tool and state directly in the
         case of ToolModules.
         """
-        raise TypeError( "Abstract method" )
 
     def encode_runtime_state( self, trans, state ):
         """ Encode the default runtime state at return as a simple `str` for
@@ -155,8 +156,8 @@ class WorkflowModule( object ):
         parameters in `compute_runtime_state` below at workflow invocation time to
         actually describe how each step will be executed.
         """
-        raise TypeError( "Abstract method" )
 
+    @abstractmethod
     def compute_runtime_state( self, trans, step_updates=None, source="html" ):
         """ Determine the runtime state (potentially different from self.state
         which describes configuration state). This (again unlike self.state) is
@@ -171,14 +172,13 @@ class WorkflowModule( object ):
         parameter which is the serialized default encoding state created with
         encode_runtime_state above).
         """
-        raise TypeError( "Abstract method" )
 
+    @abstractmethod
     def execute( self, trans, progress, invocation, step ):
         """ Execute the given workflow step in the given workflow invocation.
         Use the supplied workflow progress object to track outputs, find
         inputs, etc...
         """
-        raise TypeError( "Abstract method" )
 
     def do_invocation_step_action( self, step, action ):
         """ Update or set the workflow invocation state action - generic
@@ -189,11 +189,11 @@ class WorkflowModule( object ):
         """
         raise exceptions.RequestParameterInvalidException( "Attempting to perform invocation step action on module that does not support actions." )
 
+    @abstractmethod
     def recover_mapping( self, step, step_invocations, progress ):
         """ Re-populate progress object with information about connections
         from previously executed steps recorded via step_invocations.
         """
-        raise TypeError( "Abstract method" )
 
 
 class SimpleWorkflowModule( WorkflowModule ):
